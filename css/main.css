@@ -1,0 +1,149 @@
+@font-face {
+    font-family: ShelleyAllegro;
+    src: url('../fonts/shelleyallegropl-webfont.eot');
+    src: url('../fonts/shelleyallegropl-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/shelleyallegropl-webfont.ttf') format('truetype'),
+         url('../fonts/shelleyallegropl-webfont.svg#ShelleyAllegroPLRegular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+@keyframes vertical-ease {
+  from  {margin-top: -900px; opacity: 0;}
+  to    {margin-top: 0px; opacity: 1;}
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font: 100%/1.4 Verdana, Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #000;
+    width: 100%;
+    height: 100%;
+    background: #8e44ad;
+}
+
+body:after {
+  background: #9b59b6;
+  bottom: 0;
+  content: '';
+  display: block;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  right: 0;
+  transform: skewY(-36deg);
+  transform-origin: 0;
+  z-index: -1;
+}
+
+#container {
+  margin: 0 auto;
+  width: 800px;
+  height: 550px;
+  z-index: 1;
+  cursor:pointer;
+  perspective: 1000px;
+}
+
+#card {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transform-style: preserve-3d;
+  transition: all 1.0s linear;
+}
+
+.card-text {
+  font-family: ShelleyAllegro;
+  font-size: 100px;
+  z-index: 1;
+  color: #ecf0f1;
+}
+
+#container:hover #card {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+}
+
+.face.back {
+  display: block;
+  transform: rotateY(180deg);
+  color: white;
+  text-align: center;
+}
+
+.face.front {
+  background: #c0392b;
+  overflow: hidden;
+  z-index: -2;
+  padding: 120px;
+}
+
+.face.front:after {
+  background: #e74c3c;
+  bottom: 0;
+  content: '';
+  display: block;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  right: 0;
+  transform: skewY(-36deg);
+  transform-origin: 0;
+  z-index: -1;
+}
+
+#canvas {
+  width: 800px;
+  height: 550px;
+  background: #fff;
+}
+
+.shadow {
+  box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+}
+
+.shadow:hover {
+  box-shadow: -10px 10px 0px rgba(0,0,0,0.2);
+}
+
+.vertical-align {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.horizontal-align {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.vertical-ease {
+  animation-name: vertical-ease;
+  animation-duration: 2s;
+  animation-delay: 0.5s;
+  animation-timing-function: ease;
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+}
