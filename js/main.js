@@ -10,7 +10,6 @@
         };
 
         iHeartIt.setup(config);
-
         iHeartIt.start();
     };
     

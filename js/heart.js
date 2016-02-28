@@ -16,38 +16,55 @@ var Heart = (function(){
             throw new Error('Heart.setup function must be called before any Heart object is created!');
         }
 
-        // generate random side length 
-        this.side = Math.floor((Math.random()*25 + 10));
-        
-        // generate random starting coordinates
-        this.x = Math.floor((Math.random()*(canvasWidth - 3*this.side) + this.side));
-        this.y = Math.floor((Math.random()*(canvasHeight - 3*this.side) + this.side));
-        
-        // generate random speed
-        this.dx = Math.ceil((Math.random()*3+1))/10;
-        this.dy = Math.ceil((Math.random()*3+1))/10;
-        
-        // randomize movement direction
-        var dir = Math.random();
-        if (dir <= 0.5) this.dx = -this.dx;
-        dir = Math.random();
-        if (dir <= 0.3) this.dy = -this.dy;
-        
-        // generate random transparency
-        this.alpha = (Math.floor(Math.random()*60+25)) / 100;
-        
-        var green = Math.floor(Math.random()*225) + 30;
-        
-        // this formula gives us nice, pleasing shades of red
-        this.color = '255,' + green + ',' + (Math.floor(Math.random()*(225-green)+green) + 30);
+        if (!(this instanceof Heart)) {
+            return new Heart();
+        }
 
-        // make bigger (heavier) circles slow down faster
+        this.side = generateRandomSideLength();
+        // make bigger (heavier) hearts slow down faster
         this.drag = 1 + (this.side/300);
-        
+        this.coordinates = generateRandomCoordinates(this.side);
+        this.movementVector = generateRandomMovementVector();
+        this.rgba = generateRandomRgbaString();
         // additional variables for handling explosions
-        this.bdx = 0;
-        this.bdy = 0;
-        this.boom = false;
+        this.explosionVector = {dx:0, dy:0};
+        this.isAffectedByExplosion = false;
+    }
+
+    function generateRandomSideLength() {
+        return Math.floor((Math.random()*25 + 10));
+    }
+
+    // returns 'R,G,B,A' (e.g. '255,120,80,0.5')
+    function generateRandomRgbaString() {
+        var alpha = (Math.floor(Math.random()*60+25)) / 100;
+        var green = Math.floor(Math.random()*225) + 30;
+        // this formula gives us nice, pleasing shades of red(-ish)
+        var rgba = '255,' + green + ',' + (Math.floor(Math.random()*(225-green)+green) + 30) + ',' + alpha;
+
+        return rgba;
+    }
+
+    function generateRandomCoordinates(sideLength) {
+        var coordinates = {
+            x: Math.floor((Math.random()*(canvasWidth - 3*sideLength) + sideLength)),
+            y: Math.floor((Math.random()*(canvasHeight - 3*sideLength) + sideLength))
+        };
+
+        return coordinates;
+    }
+
+    function generateRandomMovementVector() {
+        var vector = {
+            dx: Math.ceil((Math.random()*3+1))/10,
+            dy: Math.ceil((Math.random()*3+1))/10
+        };
+        
+        // randomize directions
+        if (Math.random() < 0.5) vector.dx = -vector.dx;
+        if (Math.random() < 0.3) vector.dy = -vector.dy;
+
+        return vector;
     }
 
     // should be called before any object is created
@@ -63,82 +80,121 @@ var Heart = (function(){
 
     // draws the heart on the canvas
     Heart.prototype.draw = function() {
-        ctx.save();
-
+        ctx.save(); 
         // translate context to center of heart
-        ctx.translate(this.x + this.side * 0.9, this.y + this.side * 1.5);
+        ctx.translate(this.coordinates.x + this.side * 0.9, this.coordinates.y + this.side * 1.5);
 
         ctx.rotate(-Math.PI/4);
-
-        ctx.fillStyle = 'rgba('+this.color+','+this.alpha+')';
-
+        ctx.fillStyle = 'rgba('+this.rgba+')';
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        
-        // line from the base of the heart to the start of the left bump
-        ctx.lineTo(0, -this.side);
-        // left bump
-        ctx.arc(this.side/2, -this.side, this.side/2, Math.PI, 2*Math.PI);
-        // right bump
-        ctx.arc(this.side, -this.side/2, this.side/2, 1.5*Math.PI, Math.PI/2);
-        // closePath completes the heart nicely
-        ctx.closePath();
-        // fill the shape with color
-        ctx.fill();
+        ctx.lineTo(0, -this.side); // line from the base of the heart to the start of the left bump
+        ctx.arc(this.side/2, -this.side, this.side/2, Math.PI, 2*Math.PI); // left bump
+        ctx.arc(this.side, -this.side/2, this.side/2, 1.5*Math.PI, Math.PI/2); // right bump
+        ctx.closePath(); // closePath completes the heart nicely
+        ctx.fill(); // fill the shape with color
 
         ctx.restore();
     };
 
     // moves the heart within the canvas
-    Heart.prototype.move = function() {   
-        this.x += (this.dx + this.bdx);
-        this.y += (this.dy + this.bdy);
-    
-        if(this.x+this.side*1.7 > canvasWidth || this.x < 0) {
-            this.dx = -this.dx;
-            this.bdx = -this.bdx;
-            // safeguard in case explosion sends object too far
-            (this.x < 0) ? this.x = 0 : this.x = canvasWidth - this.side * 1.7;
+    Heart.prototype.move = function() {
+        // add movement and explosion vectors to heart coordinates
+        this.coordinates.x += (this.movementVector.dx + this.explosionVector.dx);
+        this.coordinates.y += (this.movementVector.dy + this.explosionVector.dy);
+
+        preventHeartFromGettingOutOfCanvasBounds(this);
+
+        if(this.isAffectedByExplosion) {
+            diminishExplosionEffects(this);
         }
-        
-        if(this.y+this.side*1.5 > canvasHeight || this.y < 0) {
-            this.dy = -this.dy;
-            this.bdy = -this.bdy;
-            // safeguard in case explosion sends object too far
-            (this.y < 0) ? this.y = 0 : this.y = canvasHeight - this.side * 1.5;
-        }
-        
-        // explosion handling
-        if(this.boom) {
-            // reduce the force of the explosion by drag coefficient
-            this.bdx /= this.drag;
-            this.bdy /= this.drag;
-            // if the force is small enough, set it to 0
-            if (Math.abs(this.bdx) < 0.1 && Math.abs(this.bdy) < 0.1) {
-                this.bdx = this.bdy = 0;
-                this.boom = false;
+    };
+
+    function preventHeartFromGettingOutOfCanvasBounds(HeartObj) {
+        var outOfBoundsSmallerX = HeartObj.coordinates.x < 0,
+            outOfBoundsBiggerX = HeartObj.coordinates.x+HeartObj.side*1.7 > canvasWidth,
+            outOfBoundsSmallerY = HeartObj.coordinates.y < 0,
+            outOfBoundsBiggerY = HeartObj.coordinates.y+HeartObj.side*1.5 > canvasHeight;
+
+        // check if heart is still completely within the canvas (x axis)
+        // change movement direction and adjust position if necessary
+        if(outOfBoundsSmallerX || outOfBoundsBiggerX) {
+            HeartObj.movementVector.dx = -HeartObj.movementVector.dx;
+            HeartObj.explosionVector.dx = -HeartObj.explosionVector.dx;
+
+            if (outOfBoundsSmallerX) {
+                HeartObj.coordinates.x = 0;
+            } else {
+                HeartObj.coordinates.x = canvasWidth - HeartObj.side * 1.7;
             }
         }
-    };
+        
+        // check if heart is still completely within the canvas (y axis)
+        // change movement direction and adjust position if necessary
+        if(outOfBoundsSmallerY || outOfBoundsBiggerY) {
+            HeartObj.movementVector.dy = -HeartObj.movementVector.dy;
+            HeartObj.explosionVector.dy = -HeartObj.explosionVector.dy;
 
-    // handles explosion
-    Heart.prototype.handleExplosion = function(explosion) {
-        var diffX = explosion.x - this.x,
-            diffY = explosion.y - this.y;
+            if (outOfBoundsSmallerY) {
+                HeartObj.coordinates.y = 0;
+            } else {
+                HeartObj.coordinates.y = canvasHeight - HeartObj.side * 1.5;
+            }
+        }
+    }
 
-        // calculate the distance
-        var distance = Math.ceil(Math.sqrt(diffX*diffX + diffY*diffY));
+    function diminishExplosionEffects(HeartObj) {
+        // reduce the force of the explosion by drag coefficient
+        HeartObj.explosionVector.dx /= HeartObj.drag;
+        HeartObj.explosionVector.dy /= HeartObj.drag;
+        
+        if (isExplosionVectorNearZero(HeartObj)) {
+            HeartObj.explosionVector.dx = HeartObj.explosionVector.dy = 0;
+            HeartObj.isAffectedByExplosion = false;
+        }
+    }
 
-        if (distance < explosion.radius) {
-            // set object's additional speed caused by explosion
-            // -force (so it points away from explosion) 
-            // * diff_ over distance (so the force vector points exactly from the center of the explosion through the center of the heart)
-            // * 1 - distance over explosion radius (so the force diminishes with distance)
-            this.bdx += -explosion.force * (diffX/distance) * (1-distance/explosion.radius);
-            this.bdy += -explosion.force * (diffY/distance) * (1-distance/explosion.radius);
-            this.boom = true;
+    function isExplosionVectorNearZero(HeartObj) {
+        return Math.abs(HeartObj.explosionVector.dx) < 0.1 && Math.abs(HeartObj.explosionVector.dy) < 0.1;
+    }
+
+    Heart.prototype.handleExplosion = function(explosionData) {
+        var explosionDataRelativeToHeart = getExplosionDataRelativeToHeart(this, explosionData);
+
+        if (isHeartWithinExplosionRadius(explosionData, explosionDataRelativeToHeart)) {
+            setHeartExplosionVector(this, explosionData, explosionDataRelativeToHeart);
         }
     };
+
+    function getExplosionDataRelativeToHeart(HeartObj, explosionData) {
+        var distanceX = explosionData.x - HeartObj.coordinates.x,
+            distanceY = explosionData.y - HeartObj.coordinates.y,
+            distance = Math.ceil(Math.sqrt(distanceX*distanceX + distanceY*distanceY));
+
+        return {
+            distanceX: distanceX,
+            distanceY: distanceY,
+            distance: distance
+        };
+    }
+
+    function isHeartWithinExplosionRadius(explosionData, explosionDataRelativeToHeart) {
+        return explosionDataRelativeToHeart.distance < explosionData.radius;
+    }
+
+    function setHeartExplosionVector(HeartObj, explosionData, explosionDataRelativeToHeart) {
+        var distanceX = explosionDataRelativeToHeart.distanceX,
+            distanceY = explosionDataRelativeToHeart.distanceY,
+            distance = explosionDataRelativeToHeart.distance,
+            force = explosionData.force,
+            radius = explosionData.radius;
+        // -force (so it points away from explosion) 
+        // * diff_ over distance (so the force vector points exactly from the center of the explosion through the center of the heart coordinates)
+        // * 1 - distance over explosion radius (so the force diminishes with distance)
+        HeartObj.explosionVector.dx += -force * (distanceX/distance) * (1-distance/radius);
+        HeartObj.explosionVector.dy += -force * (distanceY/distance) * (1-distance/radius);
+        HeartObj.isAffectedByExplosion = true;
+    }
 
     return Heart;
 

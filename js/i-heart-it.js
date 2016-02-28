@@ -96,12 +96,11 @@ var iHeartIt = (function(Heart){
 
     // handles click event (explosion)
     function explosionHandler(e) {
-        var x, y, canvasRect = Canvas.getBoundingClientRect();
-
-        x = e.clientX - canvasRect.left;
-        y = e.clientY - canvasRect.top;
-
         if (drawInterval) {
+            var x, y, canvasRect = Canvas.getBoundingClientRect();
+
+            x = e.clientX - canvasRect.left;
+            y = e.clientY - canvasRect.top;
 
             var explosion = {
                 x: x,
