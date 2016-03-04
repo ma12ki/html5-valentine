@@ -20,23 +20,22 @@ var Heart = (function(){
             return new Heart();
         }
 
-        this.side = generateRandomSideLength();
-        // make bigger (heavier) hearts slow down faster
-        this.drag = 1 + (this.side/300);
-        this.coordinates = generateRandomCoordinates(this.side);
-        this.movementVector = generateRandomMovementVector();
-        this.rgba = generateRandomRgbaString();
+        this.side = randomSideLength();
+        this.drag = 1 + (this.side/300); // make bigger (heavier) hearts slow down faster
+        this.coordinates = randomCoordinates(this.side);
+        this.movementVector = randomMovementVector();
+        this.rgba = randomRgbaString();
         // additional variables for handling explosions
         this.explosionVector = {dx:0, dy:0};
         this.isAffectedByExplosion = false;
     }
 
-    function generateRandomSideLength() {
+    function randomSideLength() {
         return Math.floor((Math.random()*25 + 10));
     }
 
     // returns 'R,G,B,A' (e.g. '255,120,80,0.5')
-    function generateRandomRgbaString() {
+    function randomRgbaString() {
         var alpha = (Math.floor(Math.random()*60+25)) / 100;
         var green = Math.floor(Math.random()*225) + 30;
         // this formula gives us nice, pleasing shades of red(-ish)
@@ -45,7 +44,7 @@ var Heart = (function(){
         return rgba;
     }
 
-    function generateRandomCoordinates(sideLength) {
+    function randomCoordinates(sideLength) {
         var coordinates = {
             x: Math.floor((Math.random()*(canvasWidth - 3*sideLength) + sideLength)),
             y: Math.floor((Math.random()*(canvasHeight - 3*sideLength) + sideLength))
@@ -54,7 +53,7 @@ var Heart = (function(){
         return coordinates;
     }
 
-    function generateRandomMovementVector() {
+    function randomMovementVector() {
         var vector = {
             dx: Math.ceil((Math.random()*3+1))/10,
             dy: Math.ceil((Math.random()*3+1))/10
@@ -103,14 +102,14 @@ var Heart = (function(){
         this.coordinates.x += (this.movementVector.dx + this.explosionVector.dx);
         this.coordinates.y += (this.movementVector.dy + this.explosionVector.dy);
 
-        preventHeartFromGettingOutOfCanvasBounds(this);
+        keepHeartWithinCanvasBounds(this);
 
         if(this.isAffectedByExplosion) {
             diminishExplosionEffects(this);
         }
     };
 
-    function preventHeartFromGettingOutOfCanvasBounds(HeartObj) {
+    function keepHeartWithinCanvasBounds(HeartObj) {
         var outOfBoundsSmallerX = HeartObj.coordinates.x < 0,
             outOfBoundsBiggerX = HeartObj.coordinates.x+HeartObj.side*1.7 > canvasWidth,
             outOfBoundsSmallerY = HeartObj.coordinates.y < 0,
@@ -148,14 +147,14 @@ var Heart = (function(){
         HeartObj.explosionVector.dx /= HeartObj.drag;
         HeartObj.explosionVector.dy /= HeartObj.drag;
         
-        if (isExplosionVectorNearZero(HeartObj)) {
+        if (isVectorNearZero(HeartObj.explosionVector)) {
             HeartObj.explosionVector.dx = HeartObj.explosionVector.dy = 0;
             HeartObj.isAffectedByExplosion = false;
         }
     }
 
-    function isExplosionVectorNearZero(HeartObj) {
-        return Math.abs(HeartObj.explosionVector.dx) < 0.1 && Math.abs(HeartObj.explosionVector.dy) < 0.1;
+    function isVectorNearZero(vector) {
+        return Math.abs(vector.dx) < 0.1 && Math.abs(vector.dy) < 0.1;
     }
 
     Heart.prototype.handleExplosion = function(explosionData) {
