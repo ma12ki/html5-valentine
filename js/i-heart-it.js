@@ -15,6 +15,7 @@ var iHeartIt = (function(Heart){
 
     var objects = [];
 
+    var debug = false;
     var setupCalled = false;
 
     var iHeartIt = {
@@ -39,6 +40,8 @@ var iHeartIt = (function(Heart){
         explosionRadius = config.explosionRadius;
         explosionForce = config.explosionForce;
 
+        debug = config.debug || false;
+
         // create objects
         createObjects(config.numberOfObjects);
 
@@ -55,7 +58,8 @@ var iHeartIt = (function(Heart){
         var heartConfig = {
             canvasWidth: canvasWidth,
             canvasHeight: canvasHeight,
-            ctx: ctx
+            ctx: ctx,
+            debug: debug
         };
 
         Heart.setup(heartConfig);
@@ -72,7 +76,7 @@ var iHeartIt = (function(Heart){
         }
 
         if (!drawInterval) {
-            drawInterval = setInterval(animate, 40);
+            drawInterval = setInterval(animate, 40); // 25fps
         }
     }
 
@@ -92,6 +96,18 @@ var iHeartIt = (function(Heart){
             objects[i].move();
             objects[i].draw();
         }
+
+        if (debug) {
+            drawDebugInfo();
+        }
+    }
+
+    function drawDebugInfo() {
+        ctx.font = "20px sans-serif";
+        ctx.fillStyle = "cyan";
+        ctx.fillText("DEBUG", 10, 30);
+        ctx.fillText("Canvas width: " + canvasWidth + "px, canvas height: " + canvasHeight + "px.", 10, 60);
+        ctx.fillText("Number of objects: " + objects.length + ".", 10, 90);
     }
 
     // handles click event (explosion)

@@ -6,7 +6,8 @@
             canvasId: 'canvas',
             numberOfObjects: 200,
             explosionRadius: 200,
-            explosionForce: 50
+            explosionForce: 50,
+            debug: false
         };
 
         iHeartIt.setup(config);
